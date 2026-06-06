@@ -158,106 +158,246 @@ hitung_outlier(data_bersih$pdrb_perkapita)
 hitung_outlier(data_bersih$kemiskinan)
 hitung_outlier(data_bersih$pengangguran)
 
+
 #==========================================================
 # 1.3.5 Visualisasi Data 
 #==========================================================
 
-# Histogram PDRB Per Kapita
-hist(data$pdrb_perkapita,
-     main = "Distribusi PDRB Per Kapita",
-     xlab = "PDRB Per Kapita",
-     col = "skyblue",
-     border = "black")
-
-# Boxplot Tingkat Kemiskinan
-boxplot(data$kemiskinan,
-        main = "Boxplot Tingkat Kemiskinan",
-        ylab = "Persentase Kemiskinan",
-        col = "orange")
-
-# Scatter Plot IPM dan Kemiskinan
-plot(data$ipm,
-     data$kemiskinan,
-     main = "Hubungan IPM dan Kemiskinan",
-     xlab = "IPM",
-     ylab = "Kemiskinan (%)",
-     pch = 19,
-     col = "blue")
-
-abline(lm(kemiskinan ~ ipm, data = data),
-       col = "red",
-       lwd = 2)
-
 library(ggplot2)
 
+filtered_mean_data <- data_bersih %>%
+  group_by(provinsi, tahun) %>%
+  summarise(
+    pdrb = mean(pdrb_perkapita),
+    kemiskinan = mean(kemiskinan),
+    pengangguran = mean(pengangguran),
+    ipm = mean(ipm),
+    harapan_hidup = mean(harapan_hidup),
+    lama_sekolah = mean(rata_lama_sekolah),
+    internet = mean(akses_internet),
+    jalan_baik = mean(jalan_baik),
+    air_bersih = mean(air_bersih)
+  )
+
+
+
 ggplot(data_bersih,
-       aes(x = ipm,
+       aes(x = factor(tahun),
            y = kemiskinan,
-           color = factor(tahun),
-           size = pdrb_perkapita)) +
-  geom_point(alpha = 0.7) +
+           fill = factor(tahun))) +
+  geom_boxplot() +
   labs(
-    title = "IPM vs Kemiskinan dengan Ukuran PDRB",
-    x = "IPM",
-    y = "Kemiskinan (%)",
-    color = "Tahun",
-    size = "PDRB"
+    title = "Distribusi Kemiskinan per Tahun",
+    x = "Tahun",
+    y = "Kemiskinan (%)"
   ) +
   theme_minimal()
 
-# Bar Chart Rata-rata IPM per Provinsi
+#Line Chart PDRB per Tahun
+ggplot(filtered_mean_data,
+       aes(x = tahun,
+           y = pdrb,
+           color = provinsi,
+           group = provinsi)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  labs(
+    title = "Tren PDRB per Kapita",
+    x = "Tahun",
+    y = "PDRB Per Kapita"
+  ) +
+  theme_minimal()
 
-library(dplyr)
 
-ipm_prov <- data %>%
-  group_by(provinsi) %>%
-  summarise(rata_ipm = mean(ipm, na.rm = TRUE))
+ggplot(filtered_mean_data,
+       aes(x = tahun,
+           y = internet,
+           fill = provinsi)) +
+  geom_area(alpha = 0.7) +
+  labs(
+    title = "Perkembangan Akses Internet",
+    x = "Tahun",
+    y = "Akses Internet (%)"
+  ) +
+  theme_minimal()
 
-barplot(ipm_prov$rata_ipm,
-        names.arg = ipm_prov$provinsi,
-        las = 2,
-        col = "green",
-        main = "Rata-rata IPM per Provinsi",
-        ylab = "IPM")
+ggplot(filtered_mean_data,
+       aes(x = reorder(provinsi, ipm),
+           y = ipm)) +
+  geom_segment(aes(xend = provinsi,
+                   y = 0,
+                   yend = ipm)) +
+  geom_point(size = 4) +
+  coord_flip() +
+  labs(
+    title = "IPM per Provinsi",
+    x = "Provinsi",
+    y = "IPM"
+  ) +
+  theme_minimal()
 
-# Pie Chart Kategori IPM
+# Kemiskinan
+ggplot(filtered_mean_data,
+       aes(x = provinsi,
+           y = kemiskinan,
+           fill = factor(tahun))) +
+  geom_col(position = "dodge") +
+  labs(
+    title = "Persentase kemiskinan per Provinsi setiap tahun",
+    x = "Provinsi",
+    y = "Total",
+    fill = "Tahun"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = c(
+    "#FDE0DD",  # sangat muda
+    "#FCAE91",
+    "#FB6A4A",
+    "#DE2D26",
+    "#A50F15"   # merah tua
+  ))
 
-# Membuat kategori IPM
-kategori_ipm <- cut(data$ipm,
-                    breaks = c(0, 60, 75, 100),
-                    labels = c("Rendah", "Sedang", "Tinggi"))
+#Pengangguran
+ggplot(filtered_mean_data,
+       aes(x = provinsi,
+           y = pengangguran,
+           fill = factor(tahun))) +
+  geom_col(position = "dodge") +
+  labs(
+    title = "Persentase pengangguran per Provinsi setiap tahun",
+    x = "Provinsi",
+    y = "Total",
+    fill = "Tahun"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = c(
+    "#FDE0DD",  # sangat muda
+    "#FCAE91",
+    "#FB6A4A",
+    "#DE2D26",
+    "#A50F15"   # merah tua
+  ))
 
-# Menghitung frekuensi
-freq_ipm <- table(kategori_ipm)
+# IPM
+ggplot(filtered_mean_data,
+       aes(x = factor(tahun),
+           y = provinsi,
+           fill = ipm)) +
+  geom_tile() +
+  labs(
+    title = "Heatmap IPM",
+    x = "Tahun",
+    y = "Provinsi",
+    fill = "IPM"
+  ) +
+  theme_minimal()
 
-# Membuat pie chart
-pie(freq_ipm,
-    main = "Proporsi Kategori IPM Wilayah",
-    col = rainbow(length(freq_ipm)))
+# Harapan hidup
+ggplot(filtered_mean_data,
+       aes(x = provinsi,
+           y = harapan_hidup,
+           fill = factor(tahun))) +
+  geom_col(position = "dodge")
+labs(
+  title = "Usia Harapan Hidup  per Provinsi setiap tahun",
+  x = "Provinsi",
+  y = "Total",
+  fill = "Tahun"
+) +
+  theme_minimal() +
+  scale_fill_manual(values = c(
+    "#FDE0DD",  # sangat muda
+    "#FCAE91",
+    "#FB6A4A",
+    "#DE2D26",
+    "#A50F15"   # merah tua
+  ))
+
+# Lama Sekolah
+ggplot(filtered_mean_data,
+       aes(x = provinsi,
+           y = lama_sekolah,
+           fill = factor(tahun))) +
+  geom_col(position = "dodge") +
+  labs(
+    title = "Waktu Lama Sekolah per Provinsi setiap tahun",
+    x = "Provinsi",
+    y = "Total",
+    fill = "Tahun"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = c(
+    "#FDE0DD",  # sangat muda
+    "#FCAE91",
+    "#FB6A4A",
+    "#DE2D26",
+    "#A50F15"   # merah tua
+  ))
+
+# Internet
+ggplot(filtered_mean_data,
+       aes(x = provinsi,
+           y = internet,
+           fill = factor(tahun))) +
+  geom_col(position = "dodge") +
+  labs(
+    title = "Persentase Internet per Provinsi setiap tahun",
+    x = "Provinsi",
+    y = "Total",
+    fill = "Tahun"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = c(
+    "#FDE0DD",  # sangat muda
+    "#FCAE91",
+    "#FB6A4A",
+    "#DE2D26",
+    "#A50F15"   # merah tua
+  ))
+
+# Jalan Baik
+ggplot(filtered_mean_data,
+       aes(x = provinsi,
+           y = jalan_baik,
+           fill = factor(tahun))) +
+  geom_col(position = "dodge") +
+  labs(
+    title = "Persentase Jalan Baik per Provinsi setiap tahun",
+    x = "Provinsi",
+    y = "Total",
+    fill = "Tahun"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = c(
+    "#FDE0DD",  # sangat muda
+    "#FCAE91",
+    "#FB6A4A",
+    "#DE2D26",
+    "#A50F15"   # merah tua
+  ))
+
+# Air Bersih 
+ggplot(filtered_mean_data,
+       aes(x = provinsi,
+           y = air_bersih,
+           fill = factor(tahun))) +
+  geom_col(position = "dodge") +
+  labs(
+    title = "Persentase Air Bersih per Provinsi setiap tahun",
+    x = "Provinsi",
+    y = "Total",
+    fill = "Tahun"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = c(
+    "#FDE0DD",  # sangat muda
+    "#FCAE91",
+    "#FB6A4A",
+    "#DE2D26",
+    "#A50F15"   # merah tua
+  ))
 
 #==========================================================
 # 1.3.6 Analisis Probabilitas dan Distribusi Data 
 #==========================================================
 
-# Menguji Distribusi Data
-shapiro.test(data$akses_internet)
-
-# Menentukan apakah data mendekati distribusi normal
-mean_akses <- mean(data$akses_internet)
-sd_akses <- sd(data$akses_internet)
-
-pnorm(mean_akses,
-      mean = mean_akses,
-      sd = sd_akses)
-
-#Menjelaskan hubungan konsep probabilitas dengan dataset
-
-rata_akses <- mean(data$akses_internet)
-
-jumlah_diatas <- sum(data$akses_internet > rata_akses)
-
-total_wilayah <- sum(data$akses_internet)
-
-probabilitas <- jumlah_diatas / total_wilayah
-
-probabilitas
