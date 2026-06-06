@@ -1,5 +1,5 @@
 #==========================================================
-# Memahami Dataset
+# 1.3.1 Memahami Dataset
 #==========================================================
 
 # Membaca dataset
@@ -18,7 +18,7 @@ summary(data)
 dim(data)
 
 #==========================================================
-# Statistika Deskriptif
+# 1.3.2 Statistika Deskriptif
 #==========================================================
 
 library(dplyr)
@@ -61,7 +61,7 @@ sum(is.na(data))
 # Persentase missing value
 colSums(is.na(data))/nrow(data)*100
 
-# Penanganan missing value dengan median imputation
+# Penanganan missing value dengan Menghapus data
 data_bersih <- na.omit(data)
 
 # Memastikan tidak ada missing value lagi
@@ -71,9 +71,21 @@ colSums(is.na(data_bersih))
 # 1.3.4 Analisis Outlier 
 #==========================================================
 
-# Memilih variabel numerik
-data_num <- data_bersih %>%
-  select(where(is.numeric))
+# Menentukan Variabel yang Memiliki Outlier
+cek_outlier <- function(x){
+  Q1 <- quantile(x, 0.25)
+  Q3 <- quantile(x, 0.75)
+  IQR <- Q3 - Q1
+  
+  lower <- Q1 - 1.5*IQR
+  upper <- Q3 + 1.5*IQR
+  
+  sum(x < lower | x > upper)
+}
+
+sapply(data_num, cek_outlier)
+
+# Menjelaskan variabel yang memiliki outlier.
 
 # Membuat boxplot seluruh variabel numerik
 boxplot(data_num,
@@ -94,6 +106,57 @@ boxplot(data_bersih$pengangguran,
 
 
 
+# Menentukan metode penanganan outlier (Winsorizing)
+
+# 1. PDRB Per Kapita
+Q1 <- quantile(data_bersih$pdrb_perkapita, 0.25)
+Q3 <- quantile(data_bersih$pdrb_perkapita, 0.75)
+IQR <- Q3 - Q1
+
+lower <- Q1 - 1.5 * IQR
+upper <- Q3 + 1.5 * IQR
+
+data_bersih$pdrb_perkapita <-
+  pmin(pmax(data_bersih$pdrb_perkapita, lower), upper)
+
+# 2. Kemiskinan
+Q1 <- quantile(data_bersih$kemiskinan, 0.25)
+Q3 <- quantile(data_bersih$kemiskinan, 0.75)
+IQR <- Q3 - Q1
+
+lower <- Q1 - 1.5 * IQR
+upper <- Q3 + 1.5 * IQR
+
+data_bersih$kemiskinan <-
+  pmin(pmax(data_bersih$kemiskinan, lower), upper)
+
+# 3. Pengangguran
+Q1 <- quantile(data_bersih$pengangguran, 0.25)
+Q3 <- quantile(data_bersih$pengangguran, 0.75)
+IQR <- Q3 - Q1
+
+lower <- Q1 - 1.5 * IQR
+upper <- Q3 + 1.5 * IQR
+
+data_bersih$pengangguran <-
+  pmin(pmax(data_bersih$pengangguran, lower), upper)
+
+
+# Memastikan Outlier sudah tidak ada
+hitung_outlier <- function(x){
+  Q1 <- quantile(x, 0.25)
+  Q3 <- quantile(x, 0.75)
+  IQR <- Q3 - Q1
+  
+  lower <- Q1 - 1.5 * IQR
+  upper <- Q3 + 1.5 * IQR
+  
+  sum(x < lower | x > upper)
+}
+
+hitung_outlier(data_bersih$pdrb_perkapita)
+hitung_outlier(data_bersih$kemiskinan)
+hitung_outlier(data_bersih$pengangguran)
 
 #==========================================================
 # 1.3.5 Visualisasi Data 
@@ -124,6 +187,23 @@ plot(data$ipm,
 abline(lm(kemiskinan ~ ipm, data = data),
        col = "red",
        lwd = 2)
+
+library(ggplot2)
+
+ggplot(data_bersih,
+       aes(x = ipm,
+           y = kemiskinan,
+           color = factor(tahun),
+           size = pdrb_perkapita)) +
+  geom_point(alpha = 0.7) +
+  labs(
+    title = "IPM vs Kemiskinan dengan Ukuran PDRB",
+    x = "IPM",
+    y = "Kemiskinan (%)",
+    color = "Tahun",
+    size = "PDRB"
+  ) +
+  theme_minimal()
 
 # Bar Chart Rata-rata IPM per Provinsi
 
