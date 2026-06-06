@@ -62,27 +62,17 @@ sum(is.na(data))
 colSums(is.na(data))/nrow(data)*100
 
 # Penanganan missing value dengan median imputation
-data$pdrb_perkapita[is.na(data$pdrb_perkapita)] <- median(data$pdrb_perkapita, na.rm = TRUE)
-
-data$kemiskinan[is.na(data$kemiskinan)] <- median(data$kemiskinan, na.rm = TRUE)
-
-data$pengangguran[is.na(data$pengangguran)] <- median(data$pengangguran, na.rm = TRUE)
-
-data$ipm[is.na(data$ipm)] <- median(data$ipm, na.rm = TRUE)
-
-data$akses_internet[is.na(data$akses_internet)] <- median(data$akses_internet, na.rm = TRUE)
-
-data$jalan_baik[is.na(data$jalan_baik)] <- median(data$jalan_baik, na.rm = TRUE)
+data_bersih <- na.omit(data)
 
 # Memastikan tidak ada missing value lagi
-colSums(is.na(data))
+colSums(is.na(data_bersih))
 
 #==========================================================
 # 1.3.4 Analisis Outlier 
 #==========================================================
 
 # Memilih variabel numerik
-data_num <- data %>%
+data_num <- data_bersih %>%
   select(where(is.numeric))
 
 # Membuat boxplot seluruh variabel numerik
@@ -91,15 +81,15 @@ boxplot(data_num,
         las = 2)
 
 # Membuat boxplot untuk PDRB per kapita untuk menganalisis lebih lanjut
-boxplot(data$pdrb_perkapita,
+boxplot(data_bersih$pdrb_perkapita,
         main = "Boxplot PDRB Per Kapita")
 
 # Membuat boxplot untuk kemiskinan untuk menganalisis lebih lanjut
-boxplot(data$kemiskinan,
+boxplot(data_bersih$kemiskinan,
         main = "Boxplot Kemiskinan")
 
 # Membuat boxplot untuk Pengangguran untuk menganalisis lebih lanjut
-boxplot(data$pengangguran,
+boxplot(data_bersih$pengangguran,
         main = "Boxplot Pengangguran")
 
 
